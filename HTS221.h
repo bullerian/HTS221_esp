@@ -1,10 +1,6 @@
 #ifndef __HTS221_H
 #define __HTS221_H
 
-#include "i2c.h"
-#include "stm32f0xx_gpio.h"
-#include "stm32f0xx_rcc.h"
-
 //#define DECIMAL_DIGITS 2
 
 #define HTS221_addr	 0xBF

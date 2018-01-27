@@ -1,5 +1,6 @@
 #include "HTS221.h"
-
+#include "WIRE.h"
+#include "Serial.h"
 //#define HTS_first_time
 
 #ifdef HTS_first_time
@@ -8,19 +9,45 @@
 	unsigned int humidity_t;
 #else
 	const int H0_T0_OUT=2; const int H1_T0_OUT=-11056; const int  T0_OUT=-5; const int T1_OUT=674;
-	const float T0_degC=20.625; const float T1_degC=32.5; const float H0_rh=29; const float H1_rh=71;
 	const float Ta=11.875; const uint16_t Tb=679;
 	const uint8_t Ha=42; const int16_t Hb=-11058;
 	int8_t HTS_T, HTS_H;
 #endif
 
+void I2CInit(){
+	Wire.begin();
+}
+
+uint8_t I2C_ReadByte(uint8_t addr, uint8_t reg){
+	uint8_t r_byte;
+
+	Wire.beginTransmission(addr);
+	Wire.write(reg);
+	Wire.endTransmission();
+
+	Wire.requestFrom(addr, 1);
+
+	while(Wire.available()){
+		r_byte = Wire.read();
+	}
+
+	return r_byte;
+}
+
+void I2C_SendByte(uint8_t addr, uint8_t regAddr, uint8_t data){
+	Wire.beginTransmission(addr);
+	Wire.write(regAddr);
+	Wire.write(data);
+	Wire.endTransmission();
+}
+
 unsigned char HTS221_init(){
-	unsigned char i;
+	unsigned char reg_byte;
 
 	I2CInit(); //I2C init
-	i=I2C_ReadByte(HTS221_addr, HTS221CTRL1);
-	if (!(i & HTS221CTRL1_PD)){
-		I2C_SendByte(HTS221_addr,HTS221CTRL1,(i | HTS221CTRL1_PD | HTS221CTRL1_BDU)); // BDU=1, PD=1
+	reg_byte=I2C_ReadByte(HTS221_addr, HTS221CTRL1);
+	if (!(reg_byte & HTS221CTRL1_PD)){
+		I2C_SendByte(HTS221_addr,HTS221CTRL1,(reg_byte | HTS221CTRL1_PD | HTS221CTRL1_BDU)); // BDU=1, PD=1
 	}
 
 #ifdef HTS_first_time
@@ -52,9 +79,11 @@ unsigned char HTS221_init(){
 
 uint8_t HTS221startConv(){
 	uint8_t tmp_byte;
+
 	tmp_byte=I2C_ReadByte(HTS221_addr, HTS221CTRL2); // get hts221ctrl2 reg
 	if (tmp_byte & HTS221CTRL2_ONE_SHOT) return hts221_busy; //if ONE_SHOT bit is set return BUSY
 	I2C_SendByte(HTS221_addr, HTS221CTRL2, tmp_byte | HTS221CTRL2_ONE_SHOT);// else start convention
+
 	return hts221_ok;
 }
 
